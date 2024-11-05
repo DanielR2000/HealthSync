@@ -12,17 +12,17 @@ import java.io.IOException
 class SQLiteReader (private val context: Context){
 
     fun openDatabase(uri: Uri): SQLiteDatabase? {
-        try {
+        return try {
             val parcelFileDescriptor: ParcelFileDescriptor? =
                 context.contentResolver.openFileDescriptor(uri, "r")
             val fileDescriptor: FileDescriptor = parcelFileDescriptor?.fileDescriptor ?: return null
 
             // Abre la base de datos en modo lectura usando el file descriptor
-            return SQLiteDatabase.openDatabase(fileDescriptor.toString(), null, SQLiteDatabase.OPEN_READONLY)
+            SQLiteDatabase.openDatabase(fileDescriptor.toString(), null, SQLiteDatabase.OPEN_READONLY)
         } catch (e: IOException) {
             e.printStackTrace()
+            null
         }
-        return null
     }
 
     fun readTable(database: SQLiteDatabase, tableName: String): List<Map<String, Any?>> {

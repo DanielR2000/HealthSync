@@ -39,12 +39,30 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Método para manejar el archivo seleccionado
+    // Método para manejar el archivo seleccionado
     private fun handleFileUri(uri: Uri) {
-        // Aquí es donde puedes leer el archivo SQLite
-        Toast.makeText(this, "Archivo seleccionado: $uri", Toast.LENGTH_SHORT).show()
-        // Ejemplo: abrir una conexión de lectura a la base de datos usando el URI
-        // Más adelante añadiremos el código para leer datos del archivo SQLite
+        // Crear una instancia de SQLiteReader
+        val sqliteReader = SQLiteReader(this)
+
+        // Abrir la base de datos usando el URI seleccionado
+        val database = sqliteReader.openDatabase(uri)
+
+        // Leer la tabla deseada, por ejemplo "activity_data"
+        if (database != null) {
+            try {
+                val data = sqliteReader.readTable(database, "activity_data") // Cambia "activity_data" por el nombre de tu tabla
+                // Aquí puedes hacer algo con los datos, como convertirlos a JSON
+                Toast.makeText(this, "Datos leídos: $data", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error al leer la tabla: ${e.message}", Toast.LENGTH_SHORT).show()
+            } finally {
+                database.close() // Asegúrate de cerrar la base de datos
+            }
+        } else {
+            Toast.makeText(this, "No se pudo abrir el archivo SQLite", Toast.LENGTH_SHORT).show()
+        }
     }
+
 
 }
 
