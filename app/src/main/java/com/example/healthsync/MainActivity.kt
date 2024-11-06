@@ -7,9 +7,15 @@ import android.os.Bundle
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
+import com.google.gson.Gson
+
 
 class MainActivity : AppCompatActivity() {
+
+    private val gson = Gson() // Instancia de Gson para la conversión a JSON
+
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -61,6 +67,11 @@ class MainActivity : AppCompatActivity() {
         } else {
             Toast.makeText(this, "No se pudo abrir el archivo SQLite", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    // Método para convertir la lista de datos a JSON
+    private fun convertToJSON(data: List<Map<String, Any?>>): String {
+        return gson.toJson(data) // Utiliza Gson para convertir la lista a JSON
     }
 
 
