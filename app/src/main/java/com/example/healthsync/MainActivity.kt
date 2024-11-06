@@ -57,7 +57,14 @@ class MainActivity : AppCompatActivity() {
         if (database != null) {
             try {
                 val data = sqliteReader.readTable(database, "activity_data") // Cambia "activity_data" por el nombre de tu tabla
-                // Aquí puedes hacer algo con los datos, como convertirlos a JSON
+                val jsonData = convertToJSON(data) //Convierte los datos a json
+
+                // Encripta los datos JSON
+                val dataEncryptor = DataEncryptor()
+                val secretKey = dataEncryptor.generateKey()
+                val encryptedData = dataEncryptor.encrypt(jsonData, secretKey)
+
+
                 Toast.makeText(this, "Datos leídos: $data", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 Toast.makeText(this, "Error al leer la tabla: ${e.message}", Toast.LENGTH_SHORT).show()
