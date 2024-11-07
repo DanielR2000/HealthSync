@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Button
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
@@ -19,7 +20,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        openFilePicker() // Llama a la función para abrir el explorador de archivos cuando lo necesites
+        // Vincular el botón con su ID
+        val openFilePickerButton: Button = findViewById(R.id.btn_open_file_picker)
+
+        openFilePickerButton.setOnClickListener { // Click en el boton para abrir el explorador de archivos
+            openFilePicker()
+        }
     }
 
     // Método para abrir el selector de archivos (SAF)
