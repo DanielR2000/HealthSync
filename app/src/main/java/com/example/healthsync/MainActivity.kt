@@ -99,21 +99,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun connectToBroker(jsonData: String) {
-        val brokerUrl = "tcp://172.17.255.255:1883"  // Usa la URL de tu broker EMQX
+        val brokerUrl = "tcp://localhost:1883"  // Usa la URL de tu broker EMQX
         val clientId = MqttClient.generateClientId()
         val username = "admin"  // Usuario por defecto de EMQX
         val password = "public"  // Contraseña por defecto de EMQX
 
         mqttClientManager.connectToBroker(brokerUrl, clientId, username, password,
             onSuccess = {
-                // Si la conexión es exitosa, entonces publicamos los datos
-                publishData("health/data", jsonData)
+                // Publica los datos una vez conectado
+                mqttClientManager.publishData("health/data", jsonData,
+                    onSuccess = {
+                        Toast.makeText(this, "Datos publicados exitosamente", Toast.LENGTH_SHORT).show()
+                    },
+                    onFailure = { errorMessage ->
+                        Toast.makeText(this, "Error al publicar datos: $errorMessage", Toast.LENGTH_SHORT).show()
+                    })
             },
             onFailure = { errorMessage ->
-                Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Error de conexión: $errorMessage", Toast.LENGTH_SHORT).show()
             }
         )
     }
+
 
     private fun publishData(topic: String, jsonData: String) {
         mqttClientManager.publishData(topic, jsonData,
