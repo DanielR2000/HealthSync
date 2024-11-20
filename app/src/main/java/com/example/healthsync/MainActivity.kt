@@ -58,6 +58,13 @@ class MainActivity : AppCompatActivity() {
         val sqliteReader = SQLiteReader(this)
 
         try {
+            // Validar el tipo MIME del archivo si es necesario (opcional)
+            val mimeType = contentResolver.getType(uri)
+            if (mimeType != null && mimeType != "application/x-sqlite3") {
+                Toast.makeText(this, "El archivo seleccionado no es una base de datos válida", Toast.LENGTH_SHORT).show()
+                return
+            }
+
             // Abrir la base de datos usando el URI seleccionado
             val database = sqliteReader.openDatabase(uri)
 
@@ -85,16 +92,18 @@ class MainActivity : AppCompatActivity() {
                 } catch (e: Exception) {
                     Toast.makeText(this, "Error al leer las tablas: ${e.message}", Toast.LENGTH_SHORT).show()
                 } finally {
-                    // Asegúrate de cerrar la base de datos después de la operación
+                    // Cierra la base de datos después de usarla
                     database.close()
                 }
             } else {
                 Toast.makeText(this, "No se pudo abrir el archivo SQLite", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
+            // Manejo de errores generales durante la apertura del archivo
             Toast.makeText(this, "Error al abrir el archivo: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
+
 
 
 
