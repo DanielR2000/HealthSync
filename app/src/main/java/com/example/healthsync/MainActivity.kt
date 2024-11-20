@@ -58,30 +58,38 @@ class MainActivity : AppCompatActivity() {
         // Crear una instancia de SQLiteReader
         val sqliteReader = SQLiteReader(this)
 
-        // Abrir la base de datos usando el URI seleccionado
-        val database = sqliteReader.openDatabase(uri)
+        try {
+            // Abrir la base de datos usando el URI seleccionado
+            val database = sqliteReader.openDatabase(uri)
 
-        // Leer la tabla deseada, por ejemplo "activity_data"
-        if (database != null) {
-            try {
-                val data = sqliteReader.readTable(database, "activity_data") // Cambia "activity_data" por el nombre de tu tabla
-                val jsonData = convertToJSON(data) //Convierte los datos a json
-/*
-                // Encripta los datos JSON
-                val dataEncryptor = DataEncryptor()
-                val secretKey = dataEncryptor.generateKey()
-                val encryptedData = dataEncryptor.encrypt(jsonData, secretKey)
- */
-                connectToBroker(jsonData) //Conecta al broker y envía los datos
+            if (database != null) {
+                try {
+                    // Verificar si la tabla "activity_data" existe y leerla
+                    val data = sqliteReader.readTable(database, "activity_data") // Cambia "activity_data" por el nombre de tu tabla
+                    if (data.isEmpty()) {
+                        Toast.makeText(this, "La tabla está vacía o no contiene datos", Toast.LENGTH_SHORT).show()
+                    } else {
+                        val jsonData = convertToJSON(data) // Convierte los datos a JSON
+                        // Conectar al broker y publicar los datos
+                        connectToBroker(jsonData) // Conecta al broker y publica los datos
 
-                Toast.makeText(this, "Datos leídos: $data", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                Toast.makeText(this, "Error al leer la tabla: ${e.message}", Toast.LENGTH_SHORT).show()
-            } finally {
-                database.close() // Asegúrate de cerrar la base de datos
+                        // Mostrar los datos leídos en la interfaz
+                        Toast.makeText(this, "Datos leídos y publicados: $jsonData", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    // Captura errores al leer la tabla o convertir a JSON
+                    Toast.makeText(this, "Error al leer la tabla: ${e.message}", Toast.LENGTH_SHORT).show()
+                } finally {
+                    // Asegúrate de cerrar la base de datos después de la operación
+                    database.close()
+                }
+            } else {
+                // Si no se puede abrir la base de datos
+                Toast.makeText(this, "No se pudo abrir el archivo SQLite", Toast.LENGTH_SHORT).show()
             }
-        } else {
-            Toast.makeText(this, "No se pudo abrir el archivo SQLite", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            // Captura cualquier error relacionado con la apertura del archivo
+            Toast.makeText(this, "Error al abrir el archivo: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -91,7 +99,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun connectToBroker(jsonData: String) {
-        val brokerUrl = "tcp://localhost:1883"  // Usa la URL de tu broker EMQX
+        val brokerUrl = "tcp://172.17.255.255:1883"  // Usa la URL de tu broker EMQX
         val clientId = MqttClient.generateClientId()
         val username = "admin"  // Usuario por defecto de EMQX
         val password = "public"  // Contraseña por defecto de EMQX
