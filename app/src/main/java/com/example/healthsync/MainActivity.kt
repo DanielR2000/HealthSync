@@ -25,7 +25,7 @@ class MainActivity : AppCompatActivity() {
         // Vincular el botón con su ID
         val openFilePickerButton: Button = findViewById(R.id.btn_open_file_picker)
 
-        openFilePickerButton.setOnClickListener { // Click en el boton para abrir el explorador de archivos
+        openFilePickerButton.setOnClickListener { // Click en el boton para abrir el explorador de archivos y procesa el archivo sellecionado
             openFilePicker()
         }
     }
@@ -39,6 +39,7 @@ class MainActivity : AppCompatActivity() {
         filePickerLauncher.launch(intent)
     }
 
+
     // Registramos el lanzador de resultados de la actividad para manejar el archivo seleccionado
     private val filePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
@@ -51,7 +52,6 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "No se seleccionó ningún archivo", Toast.LENGTH_SHORT).show()
         }
     }
-
 
     // Método para manejar el archivo seleccionado
     private fun handleFileUri(uri: Uri) {
@@ -72,6 +72,7 @@ class MainActivity : AppCompatActivity() {
                 val secretKey = dataEncryptor.generateKey()
                 val encryptedData = dataEncryptor.encrypt(jsonData, secretKey)
  */
+                connectToBroker(jsonData) //Conecta al broker y envía los datos
 
                 Toast.makeText(this, "Datos leídos: $data", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
@@ -89,7 +90,7 @@ class MainActivity : AppCompatActivity() {
         return gson.toJson(data) // Utiliza Gson para convertir la lista a JSON
     }
 
-    private fun connectToBroker() {
+    private fun connectToBroker(jsonData: String) {
         val brokerUrl = "tcp://localhost:1883"  // Usa la URL de tu broker EMQX
         val clientId = MqttClient.generateClientId()
         val username = "admin"  // Usuario por defecto de EMQX
@@ -97,12 +98,23 @@ class MainActivity : AppCompatActivity() {
 
         mqttClientManager.connectToBroker(brokerUrl, clientId, username, password,
             onSuccess = {
-                Toast.makeText(this, "Conectado al broker", Toast.LENGTH_SHORT).show()
+                // Si la conexión es exitosa, entonces publicamos los datos
+                publishData("health/data", jsonData)
             },
             onFailure = { errorMessage ->
                 Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show()
             }
         )
+    }
+
+    private fun publishData(topic: String, jsonData: String) {
+        mqttClientManager.publishData(topic, jsonData,
+            onSuccess = {
+                Toast.makeText(this, "Datos publicados exitosamente", Toast.LENGTH_SHORT).show()
+            },
+            onFailure = { errorMessage ->
+                Toast.makeText(this, "Error al publicar datos: $errorMessage", Toast.LENGTH_SHORT).show()
+            })
     }
 }
 
