@@ -25,6 +25,21 @@ class SQLiteReader (private val context: Context){
         }
     }
 
+    // Método para obtener todas las tablas de la base de datos
+    fun getTables(database: SQLiteDatabase): List<String> {
+        val tables = mutableListOf<String>()
+        val cursor = database.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null)
+        if (cursor.moveToFirst()) {
+            do {
+                val tableName = cursor.getString(0)
+                tables.add(tableName)
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return tables
+    }
+
+
     fun readTable(database: SQLiteDatabase, tableName: String): List<Map<String, Any?>> {
         val result = mutableListOf<Map<String, Any?>>()
         val cursor: Cursor = database.query(tableName, null, null, null, null, null, null)
