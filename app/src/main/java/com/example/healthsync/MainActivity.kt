@@ -55,7 +55,6 @@ class MainActivity : AppCompatActivity() {
 
     // Método para manejar el archivo seleccionado
     private fun handleFileUri(uri: Uri) {
-        // Crear una instancia de SQLiteReader
         val sqliteReader = SQLiteReader(this)
 
         try {
@@ -64,38 +63,44 @@ class MainActivity : AppCompatActivity() {
 
             if (database != null) {
                 try {
-                    // Verificar si la tabla "activity_data" existe y leerla
-                    val data = sqliteReader.readTable(database, "activity_data") // Cambia "activity_data" por el nombre de tu tabla
-                    if (data.isEmpty()) {
-                        Toast.makeText(this, "La tabla está vacía o no contiene datos", Toast.LENGTH_SHORT).show()
-                    } else {
-                        val jsonData = convertToJSON(data) // Convierte los datos a JSON
-                        // Conectar al broker y publicar los datos
-                        connectToBroker(jsonData) // Conecta al broker y publica los datos
+                    // Obtener todas las tablas de la base de datos
+                    val tables = sqliteReader.getTables(database)
 
-                        // Mostrar los datos leídos en la interfaz
-                        Toast.makeText(this, "Datos leídos y publicados: $jsonData", Toast.LENGTH_SHORT).show()
+                    // Mapa para almacenar los datos de todas las tablas
+                    val allData = mutableMapOf<String, List<Map<String, Any?>>>()
+
+                    // Leer los datos de todas las tablas y almacenarlos en el mapa
+                    for (table in tables) {
+                        val tableData = sqliteReader.readTable(database, table)
+                        allData[table] = tableData
                     }
+
+                    // Convertir todos los datos a JSON
+                    val jsonData = convertToJSON(allData)
+
+                    // Conectar al broker y publicar los datos
+                    connectToBroker(jsonData)
+
+                    Toast.makeText(this, "Datos leídos y publicados: $jsonData", Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
-                    // Captura errores al leer la tabla o convertir a JSON
-                    Toast.makeText(this, "Error al leer la tabla: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Error al leer las tablas: ${e.message}", Toast.LENGTH_SHORT).show()
                 } finally {
                     // Asegúrate de cerrar la base de datos después de la operación
                     database.close()
                 }
             } else {
-                // Si no se puede abrir la base de datos
                 Toast.makeText(this, "No se pudo abrir el archivo SQLite", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
-            // Captura cualquier error relacionado con la apertura del archivo
             Toast.makeText(this, "Error al abrir el archivo: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
+
+
     // Método para convertir la lista de datos a JSON
-    private fun convertToJSON(data: List<Map<String, Any?>>): String {
-        return gson.toJson(data) // Utiliza Gson para convertir la lista a JSON
+    private fun convertToJSON(data: Map<String, List<Map<String, Any?>>>): String {
+        return gson.toJson(data) // Utiliza Gson para convertir el mapa a JSON
     }
 
     private fun connectToBroker(jsonData: String) {
@@ -122,6 +127,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+//No se llama a este método
     private fun publishData(topic: String, jsonData: String) {
         mqttClientManager.publishData(topic, jsonData,
             onSuccess = {
