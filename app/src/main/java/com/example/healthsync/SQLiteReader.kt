@@ -5,6 +5,7 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import java.io.File
 import java.io.FileDescriptor
 import java.io.IOException
 
@@ -13,17 +14,22 @@ class SQLiteReader (private val context: Context){
 
     fun openDatabase(uri: Uri): SQLiteDatabase? {
         return try {
-            val parcelFileDescriptor: ParcelFileDescriptor? =
-                context.contentResolver.openFileDescriptor(uri, "r")
-            val fileDescriptor: FileDescriptor = parcelFileDescriptor?.fileDescriptor ?: return null
+            // Usa un InputStream para copiar el contenido del archivo a un archivo temporal
+            val inputStream = context.contentResolver.openInputStream(uri)
+            val tempFile = File.createTempFile("tempdb", ".sqlite", context.cacheDir)
+            tempFile.outputStream().use { output ->
+                inputStream?.copyTo(output)
+            }
+            inputStream?.close()
 
-            // Abre la base de datos en modo lectura usando el file descriptor
-            SQLiteDatabase.openDatabase(fileDescriptor.toString(), null, SQLiteDatabase.OPEN_READONLY)
+            // Abre la base de datos desde el archivo temporal
+            SQLiteDatabase.openDatabase(tempFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY)
         } catch (e: IOException) {
             e.printStackTrace()
             null
         }
     }
+
 
     // Método para obtener todas las tablas de la base de datos
     fun getTables(database: SQLiteDatabase): List<String> {
