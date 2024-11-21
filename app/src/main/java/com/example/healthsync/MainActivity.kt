@@ -2,6 +2,7 @@ package com.example.healthsync
 
 import android.app.Activity
 import android.content.Intent
+import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
@@ -58,20 +59,25 @@ class MainActivity : AppCompatActivity() {
         val sqliteReader = SQLiteReader(this)
 
         try {
-            // Validar el tipo MIME del archivo si es necesario (opcional)
-            val mimeType = contentResolver.getType(uri)
-            if (mimeType != null && mimeType != "application/x-sqlite3") {
-                Toast.makeText(this, "El archivo seleccionado no es una base de datos válida", Toast.LENGTH_SHORT).show()
-                return
-            }
-
-            // Abrir la base de datos usando el URI seleccionado
+            // Intentar abrir la base de datos con el URI seleccionado
             val database = sqliteReader.openDatabase(uri)
 
             if (database != null) {
                 try {
+                    // Comprobación de validez de la base de datos
+                    val isDatabaseValid = validateDatabase(database)
+                    if (!isDatabaseValid) {
+                        Toast.makeText(this, "El archivo no contiene una base de datos SQLite válida.", Toast.LENGTH_SHORT).show()
+                        return
+                    }
+
                     // Obtener todas las tablas de la base de datos
                     val tables = sqliteReader.getTables(database)
+
+                    if (tables.isEmpty()) {
+                        Toast.makeText(this, "La base de datos no contiene tablas.", Toast.LENGTH_SHORT).show()
+                        return
+                    }
 
                     // Mapa para almacenar los datos de todas las tablas
                     val allData = mutableMapOf<String, List<Map<String, Any?>>>()
@@ -90,17 +96,31 @@ class MainActivity : AppCompatActivity() {
 
                     Toast.makeText(this, "Datos leídos y publicados: $jsonData", Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
-                    Toast.makeText(this, "Error al leer las tablas: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Error al procesar las tablas: ${e.message}", Toast.LENGTH_SHORT).show()
                 } finally {
-                    // Cierra la base de datos después de usarla
+                    // Cerrar la base de datos después de usarla
                     database.close()
                 }
             } else {
                 Toast.makeText(this, "No se pudo abrir el archivo SQLite", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
-            // Manejo de errores generales durante la apertura del archivo
+            // Manejo de errores durante la apertura del archivo
             Toast.makeText(this, "Error al abrir el archivo: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Valida si la base de datos contiene al menos una tabla válida.
+     */
+    private fun validateDatabase(database: SQLiteDatabase): Boolean {
+        return try {
+            val cursor = database.rawQuery("SELECT name FROM sqlite_master WHERE type='table' LIMIT 1", null)
+            val hasTables = cursor.moveToFirst()
+            cursor.close()
+            hasTables
+        } catch (e: Exception) {
+            false
         }
     }
 
