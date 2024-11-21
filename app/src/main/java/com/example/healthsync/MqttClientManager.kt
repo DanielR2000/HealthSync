@@ -1,15 +1,11 @@
 package com.example.healthsync
 
 import android.content.Context
-import android.widget.Toast
 import org.eclipse.paho.android.service.MqttAndroidClient
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
-//import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 import org.eclipse.paho.client.mqttv3.IMqttToken
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.eclipse.paho.client.mqttv3.MqttMessage
-//import org.eclipse.paho.client.mqttv3.MqttCallback
-//import org.eclipse.paho.client.mqttv3.MqttMessageListener
 
 
 class MqttClientManager(private val context: Context) {

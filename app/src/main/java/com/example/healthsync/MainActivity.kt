@@ -70,48 +70,65 @@ class MainActivity : AppCompatActivity() {
                     // Comprobación de validez de la base de datos
                     val isDatabaseValid = validateDatabase(database)
                     if (!isDatabaseValid) {
-                        Toast.makeText(this, "El archivo no contiene una base de datos SQLite válida.", Toast.LENGTH_SHORT).show()
-                        return
+                        throw IllegalArgumentException("El archivo no contiene una base de datos SQLite válida.")
                     }
 
                     // Obtener todas las tablas de la base de datos
-                    val tables = sqliteReader.getTables(database)
-
-                    if (tables.isEmpty()) {
-                        Toast.makeText(this, "La base de datos no contiene tablas.", Toast.LENGTH_SHORT).show()
-                        return
+                    val tables: List<String>
+                    try {
+                        tables = sqliteReader.getTables(database)
+                        if (tables.isEmpty()) {
+                            throw IllegalStateException("La base de datos no contiene tablas.")
+                        }
+                    } catch (e: Exception) {
+                        throw RuntimeException("Error al leer las tablas de la base de datos: ${e.message}")
                     }
 
                     // Mapa para almacenar los datos de todas las tablas
                     val allData = mutableMapOf<String, List<Map<String, Any?>>>()
-
-                    // Leer los datos de todas las tablas y almacenarlos en el mapa
-                    for (table in tables) {
-                        val tableData = sqliteReader.readTable(database, table)
-                        allData[table] = tableData
+                    try {
+                        for (table in tables) {
+                            val tableData = sqliteReader.readTable(database, table)
+                            allData[table] = tableData
+                        }
+                    } catch (e: Exception) {
+                        throw RuntimeException("Error al procesar los datos de las tablas: ${e.message}")
                     }
 
                     // Convertir todos los datos a JSON
-                    val jsonData = convertToJSON(allData)
+                    val jsonData: String
+                    try {
+                        jsonData = convertToJSON(allData)
+                    } catch (e: Exception) {
+                        throw RuntimeException("Error al convertir los datos a JSON: ${e.message}")
+                    }
 
                     // Conectar al broker y publicar los datos
-                    //connectToBroker(jsonData)
+                    try {
+                        connectToBroker(jsonData)
+                    } catch (e: Exception) {
+                        throw RuntimeException("Error al conectar al broker MQTT: ${e.message}")
+                    }
 
+                    // Mostrar mensaje de éxito si sale bien
                     Toast.makeText(this, "Datos leídos y publicados: $jsonData", Toast.LENGTH_SHORT).show()
+
                 } catch (e: Exception) {
-                    Toast.makeText(this, "Error al procesar las tablas: ${e.message}", Toast.LENGTH_SHORT).show()
+                    // Manejar errores específicos en el proceso
+                    Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show()
                 } finally {
                     // Cerrar la base de datos después de usarla
                     database.close()
                 }
             } else {
-                Toast.makeText(this, "No se pudo abrir el archivo SQLite", Toast.LENGTH_SHORT).show()
+                throw IllegalArgumentException("No se pudo abrir el archivo SQLite.")
             }
         } catch (e: Exception) {
-            // Manejo de errores durante la apertura del archivo
-            Toast.makeText(this, "Error al abrir el archivo: ${e.message}", Toast.LENGTH_SHORT).show()
+            // Manejo de errores durante la apertura del archivo o conexión
+            Toast.makeText(this, "Error general: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
+
 
     /**
      * Valida si la base de datos contiene al menos una tabla válida.
@@ -126,8 +143,6 @@ class MainActivity : AppCompatActivity() {
             false
         }
     }
-
-
 
 
     // Método para convertir la lista de datos a JSON
