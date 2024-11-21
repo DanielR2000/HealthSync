@@ -14,21 +14,30 @@ class SQLiteReader (private val context: Context){
 
     fun openDatabase(uri: Uri): SQLiteDatabase? {
         return try {
-            // Usa un InputStream para copiar el contenido del archivo a un archivo temporal
             val inputStream = context.contentResolver.openInputStream(uri)
             val tempFile = File.createTempFile("tempdb", ".sqlite", context.cacheDir)
+
             tempFile.outputStream().use { output ->
                 inputStream?.copyTo(output)
             }
             inputStream?.close()
 
-            // Abre la base de datos desde el archivo temporal
+            // Validar que el archivo temporal existe y tiene contenido
+            if (!tempFile.exists() || tempFile.length() == 0L) {
+                throw IOException("El archivo temporal no fue copiado correctamente o está vacío.")
+            }
+
+            // Intentar abrir la base de datos
             SQLiteDatabase.openDatabase(tempFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY)
         } catch (e: IOException) {
             e.printStackTrace()
             null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
+
 
 
     // Método para obtener todas las tablas de la base de datos

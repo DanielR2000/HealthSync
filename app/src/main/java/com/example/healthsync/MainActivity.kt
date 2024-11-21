@@ -23,6 +23,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Inicializar mqttClientManager
+        mqttClientManager = MqttClientManager(this)
+
         // Vincular el botón con su ID
         val openFilePickerButton: Button = findViewById(R.id.btn_open_file_picker)
 
@@ -92,7 +95,7 @@ class MainActivity : AppCompatActivity() {
                     val jsonData = convertToJSON(allData)
 
                     // Conectar al broker y publicar los datos
-                    connectToBroker(jsonData)
+                    //connectToBroker(jsonData)
 
                     Toast.makeText(this, "Datos leídos y publicados: $jsonData", Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
