@@ -2,6 +2,7 @@ package com.example.healthsync
 
 import android.content.Context
 import android.util.Log
+import com.google.gson.Gson
 import org.eclipse.paho.android.service.MqttAndroidClient
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttToken
@@ -46,13 +47,27 @@ class MqttClientManager(private val context: Context) {
 
 
 
-    fun publishData(     // Publica los datos cifrados en el broker MQTT
+    fun publishData(
         topic: String,
-        encryptedData: String,
+        data: String,
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit
     ) {
-        val message = MqttMessage(encryptedData.toByteArray())
+        // Verificar si los datos son un JSON válido
+        val isJsonValid = try {
+            Gson().fromJson(data, Any::class.java)
+            true
+        } catch (e: Exception) {
+            false
+        }
+
+        if (!isJsonValid) {
+            onFailure("El contenido proporcionado no es un JSON válido.")
+            return
+        }
+
+        // Crear el mensaje MQTT
+        val message = MqttMessage(data.toByteArray())
         message.qos = 1  // Quality of Service: 1 (entrega al menos una vez)
 
         mqttClient.publish(topic, message, null, object : IMqttActionListener {
@@ -65,6 +80,7 @@ class MqttClientManager(private val context: Context) {
             }
         })
     }
+
 }
 
 
