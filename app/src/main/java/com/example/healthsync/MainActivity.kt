@@ -5,6 +5,7 @@ import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -62,72 +63,73 @@ class MainActivity : AppCompatActivity() {
         val sqliteReader = SQLiteReader(this)
 
         try {
-            // Intentar abrir la base de datos con el URI seleccionado
-            val database = sqliteReader.openDatabase(uri)
-
-            if (database != null) {
-                try {
-                    // Comprobación de validez de la base de datos
-                    val isDatabaseValid = validateDatabase(database)
-                    if (!isDatabaseValid) {
-                        throw IllegalArgumentException("El archivo no contiene una base de datos SQLite válida.")
-                    }
-
-                    // Obtener todas las tablas de la base de datos
-                    val tables: List<String>
-                    try {
-                        tables = sqliteReader.getTables(database)
-                        if (tables.isEmpty()) {
-                            throw IllegalStateException("La base de datos no contiene tablas.")
-                        }
-                    } catch (e: Exception) {
-                        throw RuntimeException("Error al leer las tablas de la base de datos: ${e.message}")
-                    }
-
-                    // Mapa para almacenar los datos de todas las tablas
-                    val allData = mutableMapOf<String, List<Map<String, Any?>>>()
-                    try {
-                        for (table in tables) {
-                            val tableData = sqliteReader.readTable(database, table)
-                            allData[table] = tableData
-                        }
-                    } catch (e: Exception) {
-                        throw RuntimeException("Error al procesar los datos de las tablas: ${e.message}")
-                    }
-
-                    // Convertir todos los datos a JSON
-                    val jsonData: String
-                    try {
-                        jsonData = convertToJSON(allData)
-                    } catch (e: Exception) {
-                        throw RuntimeException("Error al convertir los datos a JSON: ${e.message}")
-                    }
-
-                    // Conectar al broker y publicar los datos
-                    try {
-                        connectToBroker2(jsonData)
-                    } catch (e: Exception) {
-                        throw RuntimeException("Error al conectar al broker MQTT: ${e.message}")
-                    }
-
-                    // Mostrar mensaje de éxito si sale bien
-                    Toast.makeText(this, "Datos leídos y publicados: $jsonData", Toast.LENGTH_SHORT).show()
-
-                } catch (e: Exception) {
-                    // Manejar errores específicos en el proceso
-                    Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show()
-                } finally {
-                    // Cerrar la base de datos después de usarla
-                    database.close()
-                }
-            } else {
-                throw IllegalArgumentException("No se pudo abrir el archivo SQLite.")
+            val database = sqliteReader.openDatabase(uri) ?: run {
+                Toast.makeText(this, "No se pudo abrir el archivo SQLite.", Toast.LENGTH_SHORT).show()
+                return
             }
+
+            try {
+                val isDatabaseValid = validateDatabase(database)
+                if (!isDatabaseValid) {
+                    Toast.makeText(this, "El archivo no contiene una base de datos SQLite válida.", Toast.LENGTH_SHORT).show()
+                    return
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error validando la base de datos: ${e.message}", Toast.LENGTH_SHORT).show()
+                Log.e("ERROR", "Error validando la base de datos", e)
+                return
+            }
+
+            val tables: List<String>
+            try {
+                tables = sqliteReader.getTables(database)
+                if (tables.isEmpty()) {
+                    Toast.makeText(this, "La base de datos no contiene tablas.", Toast.LENGTH_SHORT).show()
+                    return
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error al leer las tablas de la base de datos: ${e.message}", Toast.LENGTH_SHORT).show()
+                Log.e("ERROR", "Error al leer las tablas de la base de datos", e)
+                return
+            }
+
+            val allData = mutableMapOf<String, List<Map<String, Any?>>>()
+            try {
+                for (table in tables) {
+                    val tableData = sqliteReader.readTable(database, table)
+                    allData[table] = tableData
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error al procesar los datos de las tablas: ${e.message}", Toast.LENGTH_SHORT).show()
+                Log.e("ERROR", "Error al procesar los datos de las tablas", e)
+                return
+            }
+
+            val jsonData: String
+            try {
+                jsonData = convertToJSON(allData)
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error al convertir los datos a JSON: ${e.message}", Toast.LENGTH_SHORT).show()
+                Log.e("ERROR", "Error al convertir los datos a JSON", e)
+                return
+            }
+
+            try {
+                connectToBroker2(jsonData)
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error al conectar al broker MQTT: ${e.message}", Toast.LENGTH_SHORT).show()
+                Log.e("ERROR", "Error al conectar al broker MQTT", e)
+                return
+            }
+
+            Toast.makeText(this, "Datos leídos y publicados: $jsonData", Toast.LENGTH_SHORT).show()
+
         } catch (e: Exception) {
-            // Manejo de errores durante la apertura del archivo o conexión
             Toast.makeText(this, "Error general: ${e.message}", Toast.LENGTH_SHORT).show()
+            Log.e("ERROR", "Error general en handleFileUri", e)
         }
     }
+
 
 
     /**
@@ -151,7 +153,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun connectToBroker2(jsonData: String) {
-        val brokerUrl = "tcp://10.0.2.2:1883"  // Usa la URL de tu broker EMQX //172.17.0.1 //  10.151.200.72   192.168.1.147   172.17.0.2
+        val brokerUrl = "tcp://172.17.0.1:1883"  // Usa la URL de tu broker EMQX //172.17.0.1 //  10.151.200.72   192.168.1.147   172.17.0.2
         val clientId = MqttClient.generateClientId()
         val username = "admin"  // Usuario por defecto de EMQX
         val password = "public"  // Contraseña por defecto de EMQX
@@ -172,6 +174,12 @@ class MainActivity : AppCompatActivity() {
             }
         )
     }
+
+
+
+
+
+
 
 
 //No se llama a este método
