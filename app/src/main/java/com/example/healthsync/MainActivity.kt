@@ -153,7 +153,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun connectToBroker2(jsonData: String) {
-        val brokerUrl = "tcp://172.17.0.1:1883"  // Usa la URL de tu broker EMQX //172.17.0.1 //  10.151.200.72   192.168.1.147   172.17.0.2
+        val brokerUrl = "ssl://uba2933f.ala.eu-central-1.emqxsl.com:8883"  // Usa la URL de tu broker EMQX //172.17.0.1 //  10.151.200.72   192.168.1.147   172.17.0.2
         val clientId = MqttClient.generateClientId()
         val username = "admin"  // Usuario por defecto de EMQX
         val password = "public"  // Contraseña por defecto de EMQX
@@ -174,8 +174,6 @@ class MainActivity : AppCompatActivity() {
             }
         )
     }
-
-
 
 
 

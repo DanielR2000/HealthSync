@@ -8,14 +8,15 @@ import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttToken
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.eclipse.paho.client.mqttv3.MqttMessage
+import javax.net.ssl.SSLSocketFactory
+
 
 
 class MqttClientManager(private val context: Context) {
 
     private lateinit var mqttClient: MqttAndroidClient
 
-
-    fun connectToBroker(     // Conecta al broker MQTT
+    fun connectToBroker(
         brokerUrl: String,
         clientId: String,
         username: String,
@@ -24,10 +25,16 @@ class MqttClientManager(private val context: Context) {
         onFailure: (String) -> Unit
     ) {
         try {
+            // Conexión con el broker utilizando SSL/TLS
             mqttClient = MqttAndroidClient(context, brokerUrl, clientId)
+
             val options = MqttConnectOptions().apply {
                 userName = username
                 this.password = password.toCharArray()
+                isCleanSession = true
+
+                // Configurar SSL/TLS: Crear una conexión segura
+                socketFactory = SSLSocketFactory.getDefault()  // Establece la fábrica de sockets SSL
             }
 
             mqttClient.connect(options, object : IMqttActionListener {
@@ -44,8 +51,6 @@ class MqttClientManager(private val context: Context) {
             onFailure("Error al inicializar el cliente MQTT: ${e.message}")
         }
     }
-
-
 
     fun publishData(
         topic: String,
@@ -80,7 +85,6 @@ class MqttClientManager(private val context: Context) {
             }
         })
     }
-
 }
 
 
