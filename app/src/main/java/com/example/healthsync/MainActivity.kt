@@ -105,7 +105,7 @@ class MainActivity : AppCompatActivity() {
 
                     // Conectar al broker y publicar los datos
                     try {
-                        connectToBroker(jsonData)
+                        connectToBroker2(jsonData)
                     } catch (e: Exception) {
                         throw RuntimeException("Error al conectar al broker MQTT: ${e.message}")
                     }
@@ -150,8 +150,8 @@ class MainActivity : AppCompatActivity() {
         return gson.toJson(data) // Utiliza Gson para convertir el mapa a JSON
     }
 
-    private fun connectToBroker(jsonData: String) {
-        val brokerUrl = "tcp://172.17.0.1:1883"  // Usa la URL de tu broker EMQX
+    private fun connectToBroker2(jsonData: String) {
+        val brokerUrl = "tcp://10.0.2.2:1883"  // Usa la URL de tu broker EMQX //172.17.0.1 //  10.151.200.72   192.168.1.147   172.17.0.2
         val clientId = MqttClient.generateClientId()
         val username = "admin"  // Usuario por defecto de EMQX
         val password = "public"  // Contraseña por defecto de EMQX

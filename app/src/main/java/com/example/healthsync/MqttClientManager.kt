@@ -1,6 +1,7 @@
 package com.example.healthsync
 
 import android.content.Context
+import android.util.Log
 import org.eclipse.paho.android.service.MqttAndroidClient
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttToken
@@ -21,22 +22,28 @@ class MqttClientManager(private val context: Context) {
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit
     ) {
-        mqttClient = MqttAndroidClient(context, brokerUrl, clientId)
-        val options = MqttConnectOptions().apply {
-            userName = username
-            this.password = password.toCharArray()
+        try {
+            mqttClient = MqttAndroidClient(context, brokerUrl, clientId)
+            val options = MqttConnectOptions().apply {
+                userName = username
+                this.password = password.toCharArray()
+            }
+
+            mqttClient.connect(options, object : IMqttActionListener {
+                override fun onSuccess(asyncActionToken: IMqttToken?) {
+                    onSuccess()  // Conexión exitosa
+                }
+
+                override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                    onFailure("Error de conexión: ${exception?.message}")  // Error de conexión
+                }
+            })
+        } catch (e: Exception) {
+            Log.e("MQTT", "Error al inicializar el cliente MQTT: ${e.message}", e)
+            onFailure("Error al inicializar el cliente MQTT: ${e.message}")
         }
-
-        mqttClient.connect(options, object : IMqttActionListener {
-            override fun onSuccess(asyncActionToken: IMqttToken?) {
-                onSuccess()  // Conexión exitosa
-            }
-
-            override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                onFailure("Error de conexión: ${exception?.message}")  // Error de conexión
-            }
-        })
     }
+
 
 
     fun publishData(     // Publica los datos cifrados en el broker MQTT
