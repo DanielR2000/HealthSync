@@ -39,24 +39,27 @@ class MainActivity : AppCompatActivity() {
     private fun openFilePicker() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
-            type = "*/*" // Permite seleccionar cualquier tipo de archivo; puedes ajustar esto a "application/x-sqlite3" si aplica
+            type =
+                "*/*" // Permite seleccionar cualquier tipo de archivo; puedes ajustar esto a "application/x-sqlite3" si aplica
         }
         filePickerLauncher.launch(intent)
     }
 
 
     // Registramos el lanzador de resultados de la actividad para manejar el archivo seleccionado
-    private val filePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val uri: Uri? = result.data?.data //Esta línea obtiene el Uri del archivo que el usuario ha seleccionado
-            uri?.let {
+    private val filePickerLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val uri: Uri? =
+                    result.data?.data //Esta línea obtiene el Uri del archivo que el usuario ha seleccionado
+                uri?.let {
 
-                handleFileUri(it) // Aquí se maneja el archivo seleccionado
+                    handleFileUri(it) // Aquí se maneja el archivo seleccionado
+                }
+            } else {
+                Toast.makeText(this, "No se seleccionó ningún archivo", Toast.LENGTH_SHORT).show()
             }
-        } else {
-            Toast.makeText(this, "No se seleccionó ningún archivo", Toast.LENGTH_SHORT).show()
         }
-    }
 
     // Método para manejar el archivo seleccionado
     private fun handleFileUri(uri: Uri) {
@@ -64,18 +67,27 @@ class MainActivity : AppCompatActivity() {
 
         try {
             val database = sqliteReader.openDatabase(uri) ?: run {
-                Toast.makeText(this, "No se pudo abrir el archivo SQLite.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "No se pudo abrir el archivo SQLite.", Toast.LENGTH_SHORT)
+                    .show()
                 return
             }
 
             try {
                 val isDatabaseValid = validateDatabase(database)
                 if (!isDatabaseValid) {
-                    Toast.makeText(this, "El archivo no contiene una base de datos SQLite válida.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "El archivo no contiene una base de datos SQLite válida.",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return
                 }
             } catch (e: Exception) {
-                Toast.makeText(this, "Error validando la base de datos: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    "Error validando la base de datos: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
                 Log.e("ERROR", "Error validando la base de datos", e)
                 return
             }
@@ -84,11 +96,16 @@ class MainActivity : AppCompatActivity() {
             try {
                 tables = sqliteReader.getTables(database)
                 if (tables.isEmpty()) {
-                    Toast.makeText(this, "La base de datos no contiene tablas.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "La base de datos no contiene tablas.", Toast.LENGTH_SHORT)
+                        .show()
                     return
                 }
             } catch (e: Exception) {
-                Toast.makeText(this, "Error al leer las tablas de la base de datos: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    "Error al leer las tablas de la base de datos: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
                 Log.e("ERROR", "Error al leer las tablas de la base de datos", e)
                 return
             }
@@ -100,7 +117,11 @@ class MainActivity : AppCompatActivity() {
                     allData[table] = tableData
                 }
             } catch (e: Exception) {
-                Toast.makeText(this, "Error al procesar los datos de las tablas: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    "Error al procesar los datos de las tablas: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
                 Log.e("ERROR", "Error al procesar los datos de las tablas", e)
                 return
             }
@@ -109,7 +130,11 @@ class MainActivity : AppCompatActivity() {
             try {
                 jsonData = convertToJSON(allData)
             } catch (e: Exception) {
-                Toast.makeText(this, "Error al convertir los datos a JSON: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    "Error al convertir los datos a JSON: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
                 Log.e("ERROR", "Error al convertir los datos a JSON", e)
                 return
             }
@@ -117,7 +142,11 @@ class MainActivity : AppCompatActivity() {
             try {
                 connectToBroker2(jsonData)
             } catch (e: Exception) {
-                Toast.makeText(this, "Error al conectar al broker MQTT: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    "Error al conectar al broker MQTT: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
                 Log.e("ERROR", "Error al conectar al broker MQTT", e)
                 return
             }
@@ -131,13 +160,13 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-
     /**
      * Valida si la base de datos contiene al menos una tabla válida.
      */
     private fun validateDatabase(database: SQLiteDatabase): Boolean {
         return try {
-            val cursor = database.rawQuery("SELECT name FROM sqlite_master WHERE type='table' LIMIT 1", null)
+            val cursor =
+                database.rawQuery("SELECT name FROM sqlite_master WHERE type='table' LIMIT 1", null)
             val hasTables = cursor.moveToFirst()
             cursor.close()
             hasTables
@@ -164,10 +193,15 @@ class MainActivity : AppCompatActivity() {
                 // Publicar datos tras conectar exitosamente
                 mqttClientManager.publishData("health/data", jsonData,
                     onSuccess = {
-                        Toast.makeText(this, "Datos publicados exitosamente", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Datos publicados exitosamente", Toast.LENGTH_SHORT)
+                            .show()
                     },
                     onFailure = { errorMessage ->
-                        Toast.makeText(this, "Error al publicar datos: $errorMessage", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this,
+                            "Error al publicar datos: $errorMessage",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 )
             },
@@ -176,21 +210,10 @@ class MainActivity : AppCompatActivity() {
             }
         )
     }
-
-
-
-
-
-
-//No se llama a este método
-    private fun publishData(topic: String, jsonData: String) {
-        mqttClientManager.publishData(topic, jsonData,
-            onSuccess = {
-                Toast.makeText(this, "Datos publicados exitosamente", Toast.LENGTH_SHORT).show()
-            },
-            onFailure = { errorMessage ->
-                Toast.makeText(this, "Error al publicar datos: $errorMessage", Toast.LENGTH_SHORT).show()
-            })
-    }
 }
+
+
+
+
+
 

@@ -55,7 +55,7 @@ dependencies {
     implementation 'androidx.sqlite:sqlite-ktx:2.4.0'
 
     // JSON handling
-    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'com.google.code.gson:gson:2.11.0'
 
     // Encryption (using AES)
     implementation 'org.bouncycastle:bcprov-jdk15to18:1.70'
