@@ -11,7 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
 import com.google.gson.Gson
-import org.eclipse.paho.client.mqttv3.MqttClient
+//import org.eclipse.paho.client.mqttv3.MqttClient
 
 
 class MainActivity : AppCompatActivity() {
@@ -153,24 +153,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun connectToBroker2(jsonData: String) {
-        val brokerUrl = "ssl://uba2933f.ala.eu-central-1.emqxsl.com:8883"  // Usa la URL de tu broker EMQX //172.17.0.1 //  10.151.200.72   192.168.1.147   172.17.0.2
-        val clientId = "danielrc7" //MqttClient.generateClientId()
-        val username = "admin"  // Usuario por defecto de EMQX
-        val password = "public"  // Contraseña por defecto de EMQX
+        val brokerUrl = "ssl://uba2933f.ala.eu-central-1.emqxsl.com:8883"
+        val clientId = "danielrc7"
+        val username = "admin"
+        val password = "public"
 
-        mqttClientManager.connectToBroker(brokerUrl, clientId, username, password,
+        mqttClientManager.connectToBroker(
+            brokerUrl, clientId, username, password,
             onSuccess = {
-                // Publica los datos una vez conectado
+                // Publicar datos tras conectar exitosamente
                 mqttClientManager.publishData("health/data", jsonData,
                     onSuccess = {
                         Toast.makeText(this, "Datos publicados exitosamente", Toast.LENGTH_SHORT).show()
                     },
                     onFailure = { errorMessage ->
                         Toast.makeText(this, "Error al publicar datos: $errorMessage", Toast.LENGTH_SHORT).show()
-                    })
+                    }
+                )
             },
             onFailure = { errorMessage ->
-                Toast.makeText(this, "Error de conexión: $errorMessage", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Error al conectar: $errorMessage", Toast.LENGTH_SHORT).show()
             }
         )
     }

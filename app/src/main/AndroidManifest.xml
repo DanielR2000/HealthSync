@@ -2,7 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"
+        tools:ignore="SelectedPhotoAccess" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
@@ -25,7 +26,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.HealthSync"
         tools:targetApi="31">
-        <service android:name="org.eclipse.paho.android.service.MqttService" />
         <!-- Define la actividad principal con android:exported="true" -->
         <activity
             android:name=".MainActivity"

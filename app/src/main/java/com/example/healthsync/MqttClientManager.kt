@@ -2,19 +2,14 @@ package com.example.healthsync
 
 import android.content.Context
 import android.util.Log
-import com.google.gson.Gson
-import org.eclipse.paho.android.service.MqttAndroidClient
-import org.eclipse.paho.client.mqttv3.IMqttActionListener
-import org.eclipse.paho.client.mqttv3.IMqttToken
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions
-import org.eclipse.paho.client.mqttv3.MqttMessage
-import javax.net.ssl.SSLSocketFactory
-
+import com.hivemq.client.mqtt.MqttClient
+import com.hivemq.client.mqtt.datatypes.MqttQos
+import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient
 
 
 class MqttClientManager(private val context: Context) {
 
-    private lateinit var mqttClient: MqttAndroidClient
+    private lateinit var mqttClient: Mqtt5AsyncClient
 
     fun connectToBroker(
         brokerUrl: String,
@@ -25,27 +20,29 @@ class MqttClientManager(private val context: Context) {
         onFailure: (String) -> Unit
     ) {
         try {
-            // Conexión con el broker utilizando SSL/TLS
-            mqttClient = MqttAndroidClient(context, brokerUrl, clientId)
+            mqttClient = MqttClient.builder()
+                .useMqttVersion5()  // Configura MQTT versión 5
+                .identifier(clientId)
+                .serverHost(brokerUrl.split("//")[1].split(":")[0])
+                .serverPort(brokerUrl.split(":").last().toInt())
+                .sslWithDefaultConfig()  // Configuración SSL por defecto
+                .buildAsync()
 
-            val options = MqttConnectOptions().apply {
-                userName = username
-                this.password = password.toCharArray()
-                isCleanSession = true
-
-                // Configurar SSL/TLS: Crear una conexión segura
-                socketFactory = SSLSocketFactory.getDefault()  // Establece la fábrica de sockets SSL
-            }
-
-            mqttClient.connect(options, object : IMqttActionListener {
-                override fun onSuccess(asyncActionToken: IMqttToken?) {
-                    onSuccess()  // Conexión exitosa
+            mqttClient.connectWith()
+                .simpleAuth()
+                .username(username)
+                .password(password.toByteArray())
+                .applySimpleAuth()
+                .send()
+                .whenComplete { _, exception ->
+                    if (exception == null) {
+                        onSuccess() // Éxito en la conexión
+                        Log.i("MQTT", "Conexión exitosa al broker")
+                    } else {
+                        onFailure("Error de conexión: ${exception.message}")
+                        Log.e("MQTT", "Error de conexión", exception)
+                    }
                 }
-
-                override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                    onFailure("Error de conexión: ${exception?.message}")  // Error de conexión
-                }
-            })
         } catch (e: Exception) {
             Log.e("MQTT", "Error al inicializar el cliente MQTT: ${e.message}", e)
             onFailure("Error al inicializar el cliente MQTT: ${e.message}")
@@ -58,34 +55,28 @@ class MqttClientManager(private val context: Context) {
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit
     ) {
-        // Verificar si los datos son un JSON válido
-        val isJsonValid = try {
-            Gson().fromJson(data, Any::class.java)
-            true
+        try {
+            mqttClient.publishWith()
+                .topic(topic)
+                .payload(data.toByteArray())
+                .qos(MqttQos.AT_LEAST_ONCE)
+                .send()
+                .whenComplete { _, exception ->
+                    if (exception == null) {
+                        onSuccess()  // Publicación exitosa
+                        Log.i("MQTT", "Datos publicados en el tópico: $topic")
+                    } else {
+                        onFailure("Error al publicar datos: ${exception.message}")
+                        Log.e("MQTT", "Error al publicar datos", exception)
+                    }
+                }
         } catch (e: Exception) {
-            false
+            Log.e("MQTT", "Error general al publicar datos: ${e.message}", e)
+            onFailure("Error general al publicar datos: ${e.message}")
         }
-
-        if (!isJsonValid) {
-            onFailure("El contenido proporcionado no es un JSON válido.")
-            return
-        }
-
-        // Crear el mensaje MQTT
-        val message = MqttMessage(data.toByteArray())
-        message.qos = 1  // Quality of Service: 1 (entrega al menos una vez)
-
-        mqttClient.publish(topic, message, null, object : IMqttActionListener {
-            override fun onSuccess(asyncActionToken: IMqttToken?) {
-                onSuccess()  // Mensaje publicado con éxito
-            }
-
-            override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                onFailure("Error al publicar datos: ${exception?.message}")  // Error al publicar
-            }
-        })
     }
 }
+
 
 
 /*    // Recibe los mensajes del broker MQTT
