@@ -23,8 +23,8 @@ class MqttClientManager(private val context: Context) {
             mqttClient = MqttClient.builder()
                 .useMqttVersion5()  // Configura MQTT versión 5
                 .identifier(clientId)
-                .serverHost(brokerUrl.split("//")[1].split(":")[0])
-                .serverPort(brokerUrl.split(":").last().toInt())
+                .serverHost(brokerUrl.split(":")[1].replace("//", ""))
+                .serverPort(brokerUrl.split(":")[2].toInt())
                 .sslWithDefaultConfig()  // Configuración SSL por defecto
                 .buildAsync()
 
@@ -59,7 +59,7 @@ class MqttClientManager(private val context: Context) {
             mqttClient.publishWith()
                 .topic(topic)
                 .payload(data.toByteArray())
-                .qos(MqttQos.AT_LEAST_ONCE)
+                .qos(MqttQos.AT_MOST_ONCE)  //AT_LEAST_ONCE
                 .send()
                 .whenComplete { _, exception ->
                     if (exception == null) {
@@ -76,40 +76,3 @@ class MqttClientManager(private val context: Context) {
         }
     }
 }
-
-
-
-/*    // Recibe los mensajes del broker MQTT
-    fun subscribeToTopic(topic: String, onMessageReceived: (String) -> Unit, onFailure: (String) -> Unit) {
-        // Establecemos el callback para recibir los mensajes
-        mqttClient.setCallback(object : MqttCallback {
-            override fun messageArrived(topic: String?, message: MqttMessage?) {
-                // Cuando se recibe un mensaje, se invoca este callback
-                onMessageReceived(message?.toString() ?: "Mensaje vacío")
-            }
-
-            override fun connectionLost(cause: Throwable?) {
-                // Conexión perdida
-                onFailure("Conexión perdida: ${cause?.message}")
-            }
-
-            override fun deliveryComplete(token: IMqttDeliveryToken?) {
-                // Confirmación de entrega (no usada en este caso)
-            }
-        })
-
-        // Suscripción al topic con QoS 1
-        mqttClient.subscribe(topic, 1, object : IMqttActionListener {
-            override fun onSuccess(asyncActionToken: IMqttToken?) {
-                // Suscripción exitosa
-                Toast.makeText(context, "Suscripción exitosa al topic: $topic", Toast.LENGTH_SHORT).show()
-            }
-
-            override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                // Error al suscribirse
-                onFailure("Error al suscribirse al topic: ${exception?.message}")
-            }
-        })
-    }
-}
-*/

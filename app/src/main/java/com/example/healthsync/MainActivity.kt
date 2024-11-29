@@ -11,7 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
 import com.google.gson.Gson
-//import org.eclipse.paho.client.mqttv3.MqttClient
+
 
 
 class MainActivity : AppCompatActivity() {
