@@ -59,7 +59,7 @@ class MqttClientManager(private val context: Context) {
             mqttClient.publishWith()
                 .topic(topic)
                 .payload(data.toByteArray())
-                .qos(MqttQos.AT_MOST_ONCE)  //AT_LEAST_ONCE
+                .qos(MqttQos.AT_MOST_ONCE)  //AT_LEAST_ONCE //AT_MOST_ONCE
                 .send()
                 .whenComplete { _, exception ->
                     if (exception == null) {

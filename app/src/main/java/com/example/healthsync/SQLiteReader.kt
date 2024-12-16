@@ -4,9 +4,7 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
-import android.os.ParcelFileDescriptor
 import java.io.File
-import java.io.FileDescriptor
 import java.io.IOException
 
 

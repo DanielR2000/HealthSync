@@ -13,7 +13,6 @@ import android.widget.Toast
 import com.google.gson.Gson
 
 
-
 class MainActivity : AppCompatActivity() {
 
     private val gson = Gson() // Instancia de Gson para la conversión a JSON
