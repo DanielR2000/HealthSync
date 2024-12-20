@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
 import com.google.gson.Gson
+import org.json.JSONObject
 
 
 class MainActivity : AppCompatActivity() {
@@ -180,29 +181,41 @@ class MainActivity : AppCompatActivity() {
         return gson.toJson(data) // Utiliza Gson para convertir el mapa a JSON
     }
 
+    private fun fragmentAndPublishData(jsonData: String, topic: String) {
+        val chunkSize = 512 * 1024 // Tamaño de cada fragmento (512 KB)
+        val fragments = jsonData.chunked(chunkSize) // Divide el JSON en fragmentos
+
+        for ((index, fragment) in fragments.withIndex()) {
+            val fragmentPayload = JSONObject().apply {
+                put("index", index)
+                put("total", fragments.size)
+                put("data", fragment)
+            }.toString()
+
+            mqttClientManager.publishData(
+                topic, fragmentPayload,
+                onSuccess = {
+                    Log.i("MQTT", "Fragmento $index/${fragments.size - 1} enviado")
+                },
+                onFailure = { errorMessage ->
+                    Log.e("MQTT", "Error al enviar fragmento $index: $errorMessage")
+                }
+            )
+        }
+    }
+
     private fun connectToBroker2(jsonData: String) {
         val brokerUrl = "ssl://uba2933f.ala.eu-central-1.emqxsl.com:8883"
         val clientId = "danielrc7"
         val username = "admin"
         val password = "public"
+        val topic = "health/data"
 
         mqttClientManager.connectToBroker(
             brokerUrl, clientId, username, password,
             onSuccess = {
-                // Publicar datos tras conectar exitosamente
-                mqttClientManager.publishData("health/data", jsonData,
-                    onSuccess = {
-                        Toast.makeText(this, "Datos publicados exitosamente", Toast.LENGTH_SHORT)
-                            .show()
-                    },
-                    onFailure = { errorMessage ->
-                        Toast.makeText(
-                            this,
-                            "Error al publicar datos: $errorMessage",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                )
+                // Fragmentar y publicar los datos en partes
+                fragmentAndPublishData(jsonData, topic)
             },
             onFailure = { errorMessage ->
                 Toast.makeText(this, "Error al conectar: $errorMessage", Toast.LENGTH_SHORT).show()
