@@ -205,8 +205,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
-
     private fun connectToBroker2(jsonData: String) {
         val brokerUrl = "ssl://uba2933f.ala.eu-central-1.emqxsl.com:8883"//"mqtts://broker.emqx.io:8883"//ssl://uba2933f.ala.eu-central-1.emqxsl.com:8883"
         val clientId = "danielrc7"
