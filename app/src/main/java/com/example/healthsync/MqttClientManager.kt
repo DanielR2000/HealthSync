@@ -5,6 +5,7 @@ import android.util.Log
 import com.hivemq.client.mqtt.MqttClient
 import com.hivemq.client.mqtt.datatypes.MqttQos
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient
+import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserProperties
 
 
 class MqttClientManager(private val context: Context) {
@@ -59,11 +60,11 @@ class MqttClientManager(private val context: Context) {
             mqttClient.publishWith()
                 .topic(topic)
                 .payload(data.toByteArray())
-                .qos(MqttQos.AT_MOST_ONCE)  //AT_LEAST_ONCE //AT_MOST_ONCE
+                .qos(MqttQos.AT_LEAST_ONCE) // Puedes cambiar el QoS según necesites
                 .send()
                 .whenComplete { _, exception ->
                     if (exception == null) {
-                        onSuccess()  // Publicación exitosa
+                        onSuccess()
                         Log.i("MQTT", "Datos publicados en el tópico: $topic")
                     } else {
                         onFailure("Error al publicar datos: ${exception.message}")
@@ -75,4 +76,36 @@ class MqttClientManager(private val context: Context) {
             onFailure("Error general al publicar datos: ${e.message}")
         }
     }
+
+    /*
+    fun publishDataWithProperties(
+        topic: String,
+        data: String,
+        userProperties: Mqtt5UserProperties,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        try {
+            mqttClient.publishWith()
+                .topic(topic)
+                .payload(data.toByteArray())
+                .qos(MqttQos.AT_LEAST_ONCE) // Puedes cambiar el QoS según necesites
+                .userProperties(userProperties) // Aquí agregamos las propiedades
+                .send()
+                .whenComplete { _, exception ->
+                    if (exception == null) {
+                        onSuccess()
+                        Log.i("MQTT", "Datos publicados en el tópico: $topic")
+                    } else {
+                        onFailure("Error al publicar datos: ${exception.message}")
+                        Log.e("MQTT", "Error al publicar datos", exception)
+                    }
+                }
+        } catch (e: Exception) {
+            Log.e("MQTT", "Error general al publicar datos: ${e.message}", e)
+            onFailure("Error general al publicar datos: ${e.message}")
+        }
+    }
+    */
+
 }

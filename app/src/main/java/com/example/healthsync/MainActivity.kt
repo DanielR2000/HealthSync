@@ -12,6 +12,12 @@ import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
 import com.google.gson.Gson
 import org.json.JSONObject
+import com.hivemq.client.mqtt.datatypes.MqttQos
+import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserProperties
+import java.util.UUID
+//import com.hivemq.client.mqtt.mqtt5.datatypes.MqttUserProperty
+//import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5UserProperties
+import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserPropertiesBuilder
 
 
 class MainActivity : AppCompatActivity() {
@@ -204,6 +210,35 @@ class MainActivity : AppCompatActivity() {
             )
         }
     }
+
+/*
+    private fun fragmentAndPublishData(jsonData: String, topic: String) {
+        val chunkSize = 512 * 1024 // Tamaño de cada fragmento (512 KB)
+        val fragments = jsonData.chunked(chunkSize) // Divide el JSON en fragmentos
+        val identifier = UUID.randomUUID().toString() // Identificador único del mensaje
+
+        for ((index, fragment) in fragments.withIndex()) {
+            // Construcción de User Properties con el nuevo método
+            val userProperties = Mqtt5UserProperties.builder()
+                .add("fragment.identifier", identifier)
+                .add("fragment.index", index.toString())
+                .add("fragment.count", fragments.size.toString())
+                .build()
+
+            mqttClientManager.publishDataWithProperties(
+                topic,
+                fragment,
+                userProperties,
+                onSuccess = {
+                    Log.i("MQTT", "Fragmento $index/${fragments.size - 1} enviado")
+                },
+                onFailure = { errorMessage ->
+                    Log.e("MQTT", "Error al enviar fragmento $index: $errorMessage")
+                }
+            )
+        }
+    }
+*/
 
     private fun connectToBroker2(jsonData: String) {
         val brokerUrl = "ssl://uba2933f.ala.eu-central-1.emqxsl.com:8883"//"mqtts://broker.emqx.io:8883"//ssl://uba2933f.ala.eu-central-1.emqxsl.com:8883"
