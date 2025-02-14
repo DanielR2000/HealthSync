@@ -24,6 +24,9 @@ class MainActivity : AppCompatActivity() {
 
     private val gson = Gson() // Instancia de Gson para la conversión a JSON
     private lateinit var mqttClientManager: MqttClientManager
+    // Variables globales para almacenar los valores de _id e IDENTIFIER
+    private var deviceId: String? = null
+    private var deviceIdentifier: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -39,7 +42,19 @@ class MainActivity : AppCompatActivity() {
         openFilePickerButton.setOnClickListener { // Click en el boton para abrir el explorador de archivos y procesa el archivo sellecionado
             openFilePicker()
         }
+
+        val showDeviceInfoButton: Button = findViewById(R.id.btn_show_device_info)
+
+        showDeviceInfoButton.setOnClickListener {
+            showDeviceInfo()
+        }
     }
+
+    private fun showDeviceInfo() {
+        val message = "Device USER ID: ${deviceId ?: "No encontrado"}\nDevice Identifier MAC: ${deviceIdentifier ?: "No encontrado"}"
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+
 
     // Método para abrir el selector de archivos (SAF)
     private fun openFilePicker() {
@@ -145,6 +160,21 @@ class MainActivity : AppCompatActivity() {
                 return
             }
 
+            // Extraer los valores de _id y IDENTIFIER de la tabla DEVICE
+            try {
+                val jsonObject = JSONObject(jsonData)
+                if (jsonObject.has("DEVICE")) {
+                    val deviceArray = jsonObject.getJSONArray("DEVICE")
+                    if (deviceArray.length() > 0) {
+                        val firstDevice = deviceArray.getJSONObject(0)
+                        deviceId = firstDevice.optString("_id")
+                        deviceIdentifier = firstDevice.optString("IDENTIFIER")
+                    }
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error al extraer datos de DEVICE: ${e.message}", Toast.LENGTH_SHORT).show()
+                Log.e("ERROR", "Error al extraer datos de DEVICE", e)
+            }
             try {
                 connectToBroker2(jsonData)
             } catch (e: Exception) {
@@ -180,7 +210,7 @@ class MainActivity : AppCompatActivity() {
             false
         }
     }
-
+                            
 
     // Método para convertir la lista de datos a JSON
     private fun convertToJSON(data: Map<String, List<Map<String, Any?>>>): String {
