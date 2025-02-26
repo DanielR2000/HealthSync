@@ -3,9 +3,12 @@ package com.example.healthsync
 import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
+import android.icu.text.SimpleDateFormat
 import android.net.Uri
 import java.io.File
 import java.io.IOException
+import java.sql.Date
+import java.util.Locale
 
 
 class SQLiteReader (private val context: Context){
@@ -52,7 +55,6 @@ class SQLiteReader (private val context: Context){
         return tables
     }
 
-
     fun readTable(database: SQLiteDatabase, tableName: String): List<Map<String, Any?>> {
         val result = mutableListOf<Map<String, Any?>>()
         val cursor: Cursor = database.query(tableName, null, null, null, null, null, null)
@@ -62,7 +64,16 @@ class SQLiteReader (private val context: Context){
                 val row = mutableMapOf<String, Any?>()
                 for (columnIndex in 0 until cursor.columnCount) {
                     val columnName = cursor.getColumnName(columnIndex)
-                    row[columnName] = cursor.getString(columnIndex)
+                    val value = cursor.getString(columnIndex)
+
+                    // Usar el operador seguro para evitar problemas con valores nulos
+                    row[columnName] = value?.toLongOrNull()?.let { timestamp ->
+                        if (timestamp > 1000000000) { // Evitar valores demasiado pequeños
+                            convertTimestampToDate(timestamp)
+                        } else {
+                            value // No es un timestamp, se deja el valor original
+                        }
+                    } ?: value
                 }
                 result.add(row)
             } while (cursor.moveToNext())
@@ -71,4 +82,13 @@ class SQLiteReader (private val context: Context){
         cursor.close()
         return result
     }
+
+    private fun convertTimestampToDate(timestamp: Long): String {
+        // Si el timestamp es menor a 100000000000, asumimos que está en segundos y lo convertimos a milisegundos
+        val adjustedTimestamp = if (timestamp < 100000000000L) timestamp * 1000 else timestamp
+        val date = Date(adjustedTimestamp)
+        val format = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        return format.format(date)
+    }
+
 }
