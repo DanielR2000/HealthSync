@@ -68,7 +68,7 @@ class SQLiteReader (private val context: Context){
 
                     // Usar el operador seguro para evitar problemas con valores nulos
                     row[columnName] = value?.toLongOrNull()?.let { timestamp ->
-                        if (timestamp > 1000000000) { // Evitar valores demasiado pequeños
+                        if (timestamp > 10000000) { // Evitar valores demasiado pequeños
                             convertTimestampToDate(timestamp)
                         } else {
                             value // No es un timestamp, se deja el valor original
