@@ -18,6 +18,17 @@ import java.util.UUID
 //import com.hivemq.client.mqtt.mqtt5.datatypes.MqttUserProperty
 //import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5UserProperties
 import com.hivemq.client.mqtt.mqtt5.datatypes.Mqtt5UserPropertiesBuilder
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.net.HttpURLConnection
+import java.net.URL
+import javax.crypto.SecretKey
+import javax.crypto.spec.SecretKeySpec
+
+import javax.crypto.Cipher
+import android.util.Base64
+import java.security.SecureRandom
+import javax.crypto.spec.GCMParameterSpec
 
 
 class MainActivity : AppCompatActivity() {
@@ -217,16 +228,20 @@ class MainActivity : AppCompatActivity() {
         return gson.toJson(data) // Utiliza Gson para convertir el mapa a JSON
     }
 
-    private fun fragmentAndPublishData(jsonData: String, topic: String) {
+    private fun fragmentAndPublishData(jsonData: String, topic: String, aesKey: String) {
         val chunkSize = 512 * 1024 // Tamaño de cada fragmento (512 KB)
         val fragments = jsonData.chunked(chunkSize) // Divide el JSON en fragmentos
 
         for ((index, fragment) in fragments.withIndex()) {
+            // Cifrar el fragmento antes de enviarlo
+            //val encryptedFragment = encryptWithAES(fragment, aesKey)
+
             val fragmentPayload = JSONObject().apply {
                 put("message_id", "ID_1" )
                 put("index", index)
                 put("total", fragments.size)
                 put("data", fragment)
+                //put("data", encryptedFragment) // Enviar el fragmento cifrado
             }.toString()
 
             mqttClientManager.publishData(
@@ -241,53 +256,115 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-/*
-    private fun fragmentAndPublishData(jsonData: String, topic: String) {
-        val chunkSize = 512 * 1024 // Tamaño de cada fragmento (512 KB)
-        val fragments = jsonData.chunked(chunkSize) // Divide el JSON en fragmentos
-        val identifier = UUID.randomUUID().toString() // Identificador único del mensaje
 
-        for ((index, fragment) in fragments.withIndex()) {
-            // Construcción de User Properties con el nuevo método
-            val userProperties = Mqtt5UserProperties.builder()
-                .add("fragment.identifier", identifier)
-                .add("fragment.index", index.toString())
-                .add("fragment.count", fragments.size.toString())
-                .build()
 
-            mqttClientManager.publishDataWithProperties(
-                topic,
-                fragment,
-                userProperties,
-                onSuccess = {
-                    Log.i("MQTT", "Fragmento $index/${fragments.size - 1} enviado")
-                },
-                onFailure = { errorMessage ->
-                    Log.e("MQTT", "Error al enviar fragmento $index: $errorMessage")
-                }
-            )
+
+
+    /*
+        private fun fragmentAndPublishData(jsonData: String, topic: String) {
+            val chunkSize = 512 * 1024 // Tamaño de cada fragmento (512 KB)
+            val fragments = jsonData.chunked(chunkSize) // Divide el JSON en fragmentos
+            val identifier = UUID.randomUUID().toString() // Identificador único del mensaje
+
+            for ((index, fragment) in fragments.withIndex()) {
+                // Construcción de User Properties con el nuevo método
+                val userProperties = Mqtt5UserProperties.builder()
+                    .add("fragment.identifier", identifier)
+                    .add("fragment.index", index.toString())
+                    .add("fragment.count", fragments.size.toString())
+                    .build()
+
+                mqttClientManager.publishDataWithProperties(
+                    topic,
+                    fragment,
+                    userProperties,
+                    onSuccess = {
+                        Log.i("MQTT", "Fragmento $index/${fragments.size - 1} enviado")
+                    },
+                    onFailure = { errorMessage ->
+                        Log.e("MQTT", "Error al enviar fragmento $index: $errorMessage")
+                    }
+                )
+            }
         }
-    }
-*/
+    */
 
     private fun connectToBroker2(jsonData: String) {
-        val brokerUrl = "ssl://uba2933f.ala.eu-central-1.emqxsl.com:8883"//"mqtts://broker.emqx.io:8883"//ssl://uba2933f.ala.eu-central-1.emqxsl.com:8883"
+        val brokerUrl = "ssl://uba2933f.ala.eu-central-1.emqxsl.com:8883"
         val clientId = "danielrc7"
         val username = "admin"
         val password = "public"
         val topic = "health/data"
 
+        // Obtener la clave AES desde el servidor
+        //val aesKey = getAesKeyFromServer("https://flask-aes-render.onrender.com/get-key") ?: return
+        val aesKey = "0ffAag5jFesLTj9S3B_fmE6WNWuj-EpjtcJd68WvDFs"
         mqttClientManager.connectToBroker(
             brokerUrl, clientId, username, password,
             onSuccess = {
-                // Fragmentar y publicar los datos en partes
-                fragmentAndPublishData(jsonData, topic)
+                // Fragmentar y publicar los datos cifrados
+                fragmentAndPublishData(jsonData, topic, aesKey)
             },
             onFailure = { errorMessage ->
                 Toast.makeText(this, "Error al conectar: $errorMessage", Toast.LENGTH_SHORT).show()
             }
         )
     }
+
+
+
+    fun getAesKeyFromServer(url: String): String? {
+        var aesKey: String? = null
+        try {
+            val urlObj = URL(url)
+            val connection = urlObj.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connect()
+
+            val inputStreamReader = InputStreamReader(connection.inputStream)
+            val bufferedReader = BufferedReader(inputStreamReader)
+            val response = StringBuilder()
+            var line: String?
+            while (bufferedReader.readLine().also { line = it } != null) {
+                response.append(line)
+            }
+
+            // Parsear la respuesta JSON y obtener la clave AES
+            val jsonResponse = JSONObject(response.toString())
+            aesKey = jsonResponse.getString("aes_key") // Extraer el valor de "aes_key"
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return aesKey
+    }
+
+
+
+
+
+    fun encryptWithAES(data: String, aesKey: String): String {
+        return try {
+            val fixedAesKey = aesKey.replace('-', '+').replace('_', '/')
+            val keyBytes = Base64.decode(fixedAesKey, Base64.DEFAULT)
+            val secretKey: SecretKey = SecretKeySpec(keyBytes, "AES")
+
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+
+            val encryptedData = cipher.doFinal(data.toByteArray())
+            Base64.encodeToString(encryptedData, Base64.DEFAULT)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "ERROR: ${e.message}"
+        }
+    }
+
+
+
+
+
+
+
 }
 
 
